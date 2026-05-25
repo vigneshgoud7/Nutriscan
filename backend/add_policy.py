@@ -1,8 +1,16 @@
 import asyncio
 import asyncpg
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 async def main():
-    db_url = DATABASE_URL
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        print("Error: DATABASE_URL not found in .env file.")
+        return
+
     conn = await asyncpg.connect(db_url)
     
     sql = """
