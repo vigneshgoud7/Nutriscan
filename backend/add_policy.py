@@ -2,7 +2,7 @@ import asyncio
 import asyncpg
 
 async def main():
-    db_url = "postgresql://postgres.uqclehpajfqghakxafln:NutriScan123%21@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+    db_url = DATABASE_URL
     conn = await asyncpg.connect(db_url)
     
     sql = """
