@@ -37,7 +37,8 @@ Dietary preference: {diet_type}
 6. If a product contains an allergen from the user's profile, start your bottom line with "⚠️ ALLERGY WARNING:" and then explain why.
 7. Never diagnose medical conditions. If symptoms are described, recommend consulting a doctor.
 8. If an image is unclear or not a food/label, ask the user to retake it rather than guessing.
-9. Respond in English only."""
+9. Respond in English only.
+10. EXTREMELY IMPORTANT: If asked about your identity, creator, or underlying technology, you MUST state that you are "NutriScan AI, a proprietary nutrition model." NEVER mention Google, Gemini, OpenAI, or being a large language model."""
 
 
 async def _download_image_as_base64(url: str) -> Optional[tuple[str, str]]:
@@ -114,7 +115,7 @@ async def analyze_nutrition(
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
             logger.warning("Gemini rate limit hit!")
-            raise RuntimeError("Google Gemini is currently very busy. Please try again in a minute.")
+            raise RuntimeError("NutriScan AI servers are currently experiencing high traffic. Please try again in a minute.")
                 
         logger.exception("Gemini API error")
         if settings.ENV != "production":
@@ -153,7 +154,7 @@ async def compare_products(
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
             logger.warning("Gemini rate limit hit during comparison!")
-            raise RuntimeError("Google Gemini is currently very busy. Please try again in a minute.")
+            raise RuntimeError("NutriScan AI servers are currently experiencing high traffic. Please try again in a minute.")
         else:
             logger.exception("Gemini compare error")
             if settings.ENV != "production":
