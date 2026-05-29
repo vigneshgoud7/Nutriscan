@@ -1,6 +1,6 @@
 class AppConstants {
   // ── Replace these with your actual values ─────────────────────
-  static const String apiBaseUrl = 'http://localhost:8000/api/v1';
+  static const String apiBaseUrl = 'https://nutriscan-qun0.onrender.com/api/v1';
 
   static const String supabaseUrl = 'https://uqclehpajfqghakxafln.supabase.co';
   static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxY2xlaHBhamZxZ2hha3hhZmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzYxMDYsImV4cCI6MjA5NDk1MjEwNn0.7nu4qXHar7q8-8m-bC7FoMpQMznulQGVVpYmJ4n4rIY';
