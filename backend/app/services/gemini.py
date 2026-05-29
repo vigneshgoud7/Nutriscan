@@ -104,7 +104,7 @@ async def _call_grok_fallback(parts: list) -> str:
             has_image = True
             
     if has_image:
-        model = "llama-3.2-90b-vision-preview"
+        model = "llama-3.2-11b-vision-preview"
         final_content = content_array
     else:
         model = "llama-3.3-70b-versatile"
