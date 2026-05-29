@@ -16,7 +16,6 @@ if settings.ENV != "production":
             os.environ.pop(proxy_var, None)
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
-_model = genai.GenerativeModel(settings.GEMINI_MODEL)
 
 SYSTEM_PROMPT_TEMPLATE = """You are NutriScan AI, a personal nutrition assistant. You analyze food products, nutrition labels, and food images, then give answers specifically tailored to the user's health profile.
 
@@ -85,7 +84,7 @@ def _history_to_text(history: List[ChatMessage]) -> str:
     return "\n".join(lines)
 
 
-async def _call_gemini_fallback(parts: list) -> str:
+async def _call_gemini_fallback(parts: list, system_instruction: str) -> str:
     """Fallback to a secondary Gemini API key using REST if the first rate limits."""
     if not settings.GEMINI_FALLBACK_API_KEY:
         raise ValueError("No fallback Gemini API key configured")
@@ -103,6 +102,9 @@ async def _call_gemini_fallback(parts: list) -> str:
             })
             
     payload = {
+        "system_instruction": {
+            "parts": [{"text": system_instruction}]
+        },
         "contents": [
             {"role": "user", "parts": api_parts}
         ]
@@ -130,7 +132,7 @@ async def analyze_nutrition(
     history_text = _history_to_text(history)
 
     parts = [
-        f"{system_prompt}\n\n## Conversation history\n{history_text}\n\n## Current question\n{user_question}"
+        f"## Conversation history\n{history_text}\n\n## Current question\n{user_question}"
     ]
 
     if image_url:
@@ -142,7 +144,11 @@ async def analyze_nutrition(
             parts[0] += "\n\n(Note: the user attached an image but it could not be loaded. Ask them to re-upload.)"
 
     try:
-        response = _model.generate_content(parts)
+        model = genai.GenerativeModel(
+            model_name=settings.GEMINI_MODEL,
+            system_instruction=system_prompt
+        )
+        response = model.generate_content(parts)
         return response.text
     except Exception as e:
         error_msg = str(e).lower()
@@ -150,7 +156,7 @@ async def analyze_nutrition(
             logger.warning("Gemini primary rate limit hit! Trying fallback key...")
             if settings.GEMINI_FALLBACK_API_KEY:
                 try:
-                    return await _call_gemini_fallback(parts)
+                    return await _call_gemini_fallback(parts, system_prompt)
                 except Exception as fallback_err:
                     logger.exception(f"Gemini fallback also failed: {fallback_err}")
             raise RuntimeError("Service error.")
@@ -177,7 +183,7 @@ async def compare_products(
         "Finish with a definitive recommendation of which product is best for this specific user and why."
     )
 
-    parts = [f"{system_prompt}\n\n## Comparison request\n{question}"]
+    parts = [f"## Comparison request\n{question}"]
 
     for p in products:
         img_data = await _download_image_as_base64(p["image_url"])
@@ -186,7 +192,11 @@ async def compare_products(
             parts.append({"mime_type": mime, "data": b64})
 
     try:
-        response = _model.generate_content(parts)
+        model = genai.GenerativeModel(
+            model_name=settings.GEMINI_MODEL,
+            system_instruction=system_prompt
+        )
+        response = model.generate_content(parts)
         text = response.text
     except Exception as e:
         error_msg = str(e).lower()
@@ -194,7 +204,7 @@ async def compare_products(
             logger.warning("Gemini primary rate limit hit during comparison! Trying fallback key...")
             if settings.GEMINI_FALLBACK_API_KEY:
                 try:
-                    text = await _call_gemini_fallback(parts)
+                    text = await _call_gemini_fallback(parts, system_prompt)
                 except Exception as fallback_err:
                     logger.exception(f"Gemini fallback also failed: {fallback_err}")
                     raise RuntimeError("Service error.")
