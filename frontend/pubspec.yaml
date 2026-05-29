@@ -61,8 +61,20 @@ dev_dependencies:
   riverpod_generator: ^2.4.0
   retrofit_generator: ^8.1.0
   mockito: ^5.4.4
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/icon/
