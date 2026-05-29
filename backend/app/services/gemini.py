@@ -115,12 +115,12 @@ async def analyze_nutrition(
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
             logger.warning("Gemini rate limit hit!")
-            raise RuntimeError("NutriScan AI servers are currently experiencing high traffic. Please try again in a minute.")
+            raise RuntimeError("Service error.")
                 
         logger.exception("Gemini API error")
         if settings.ENV != "production":
-            raise RuntimeError(f"AI service error: {e}")
-        raise RuntimeError("AI service temporarily unavailable. Please try again.")
+            raise RuntimeError(f"Service error: {e}")
+        raise RuntimeError("Service error.")
 
 
 async def compare_products(
@@ -154,12 +154,12 @@ async def compare_products(
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
             logger.warning("Gemini rate limit hit during comparison!")
-            raise RuntimeError("NutriScan AI servers are currently experiencing high traffic. Please try again in a minute.")
+            raise RuntimeError("Service error.")
         else:
             logger.exception("Gemini compare error")
             if settings.ENV != "production":
-                raise RuntimeError(f"AI service error: {e}")
-            raise RuntimeError("AI service temporarily unavailable. Please try again.")
+                raise RuntimeError(f"Service error: {e}")
+            raise RuntimeError("Service error.")
 
     winner = None
     for name in names:
