@@ -84,40 +84,6 @@ def _history_to_text(history: List[ChatMessage]) -> str:
     return "\n".join(lines)
 
 
-async def _call_grok_fallback(parts: list) -> str:
-    """Fallback to xAI's Grok API if Gemini hits a rate limit."""
-    if not settings.GROK_API_KEY:
-        raise ValueError("No Grok API key configured for fallback")
-    
-    # Groq recently decommissioned all their vision models. 
-    # We must strip images and only send text, otherwise it crashes.
-    text_parts = [p for p in parts if isinstance(p, str)]
-    final_content = "\n".join(text_parts)
-    
-    has_image = any(isinstance(p, dict) and "data" in p for p in parts)
-    if has_image:
-        final_content += "\n\n(Note: The user attached an image, but this backup AI model does not have eyes. Please try to answer their question based on the text alone, or ask them to type out the ingredients/nutrition facts.)"
-        
-    payload = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": [
-            {"role": "user", "content": final_content}
-        ]
-    }
-    
-    headers = {
-        "Authorization": f"Bearer {settings.GROK_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers)
-        if r.status_code != 200:
-            logger.error(f"Groq API Error: {r.text}")
-        r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"]
-
-
 
 async def analyze_nutrition(
     user_question: str,
@@ -147,12 +113,8 @@ async def analyze_nutrition(
     except Exception as e:
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
-            logger.warning("Gemini rate limit hit! Falling back to Grok API...")
-            try:
-                return await _call_grok_fallback(parts)
-            except Exception as grok_err:
-                logger.exception(f"Grok fallback failed: {grok_err}")
-                raise RuntimeError("AI service temporarily unavailable (both primary and fallback failed). Please try again.")
+            logger.warning("Gemini rate limit hit!")
+            raise RuntimeError("Google Gemini is currently very busy. Please try again in a minute.")
                 
         logger.exception("Gemini API error")
         if settings.ENV != "production":
@@ -190,12 +152,8 @@ async def compare_products(
     except Exception as e:
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
-            logger.warning("Gemini rate limit hit! Falling back to Grok API for comparison...")
-            try:
-                text = await _call_grok_fallback(parts)
-            except Exception as grok_err:
-                logger.exception(f"Grok fallback failed: {grok_err}")
-                raise RuntimeError("AI service temporarily unavailable (both primary and fallback failed). Please try again.")
+            logger.warning("Gemini rate limit hit during comparison!")
+            raise RuntimeError("Google Gemini is currently very busy. Please try again in a minute.")
         else:
             logger.exception("Gemini compare error")
             if settings.ENV != "production":
