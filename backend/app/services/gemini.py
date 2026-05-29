@@ -85,6 +85,39 @@ def _history_to_text(history: List[ChatMessage]) -> str:
     return "\n".join(lines)
 
 
+async def _call_gemini_fallback(parts: list) -> str:
+    """Fallback to a secondary Gemini API key using REST if the first rate limits."""
+    if not settings.GEMINI_FALLBACK_API_KEY:
+        raise ValueError("No fallback Gemini API key configured")
+        
+    api_parts = []
+    for p in parts:
+        if isinstance(p, str):
+            api_parts.append({"text": p})
+        elif isinstance(p, dict) and "data" in p:
+            api_parts.append({
+                "inline_data": {
+                    "mime_type": p.get("mime_type", "image/jpeg"),
+                    "data": p["data"]
+                }
+            })
+            
+    payload = {
+        "contents": [
+            {"role": "user", "parts": api_parts}
+        ]
+    }
+    
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent?key={settings.GEMINI_FALLBACK_API_KEY}"
+    
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.post(url, json=payload)
+        r.raise_for_status()
+        data = r.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+
+
+
 
 async def analyze_nutrition(
     user_question: str,
@@ -114,7 +147,12 @@ async def analyze_nutrition(
     except Exception as e:
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
-            logger.warning("Gemini rate limit hit!")
+            logger.warning("Gemini primary rate limit hit! Trying fallback key...")
+            if settings.GEMINI_FALLBACK_API_KEY:
+                try:
+                    return await _call_gemini_fallback(parts)
+                except Exception as fallback_err:
+                    logger.exception(f"Gemini fallback also failed: {fallback_err}")
             raise RuntimeError("Service error.")
                 
         logger.exception("Gemini API error")
@@ -153,8 +191,15 @@ async def compare_products(
     except Exception as e:
         error_msg = str(e).lower()
         if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
-            logger.warning("Gemini rate limit hit during comparison!")
-            raise RuntimeError("Service error.")
+            logger.warning("Gemini primary rate limit hit during comparison! Trying fallback key...")
+            if settings.GEMINI_FALLBACK_API_KEY:
+                try:
+                    text = await _call_gemini_fallback(parts)
+                except Exception as fallback_err:
+                    logger.exception(f"Gemini fallback also failed: {fallback_err}")
+                    raise RuntimeError("Service error.")
+            else:
+                raise RuntimeError("Service error.")
         else:
             logger.exception("Gemini compare error")
             if settings.ENV != "production":
