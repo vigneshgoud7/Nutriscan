@@ -12,35 +12,107 @@
 
 <br />
 
-NutriScan AI is a full-stack, AI-powered health and nutrition application. Capture a photo of any food, meal, or nutrition label, and receive instant, personalized dietary analysis. Powered by **Google Gemini 1.5 Flash Vision** and tailored to your unique health profile, allergies, and goals.
+## 📖 Project Overview
 
----
+NutriScan AI is a full-stack, AI-powered health and nutrition application designed to revolutionize how individuals understand their dietary intake. Simply capture a photo of any food, meal, or nutrition label, and receive an instant, personalized dietary analysis. 
 
-## ✨ Features
+Powered by **Google Gemini 1.5 Flash Vision** and tailored to your unique health profile, allergies, and specific goals, NutriScan acts as your 24/7 personal nutritionist. Whether you are tracking macros, managing allergies, or trying to make healthier grocery choices, NutriScan provides real-time, actionable insights.
 
-- 📸 **AI Image Analysis:** Photograph nutrition labels or meals to get instant macronutrient breakdowns.
-- 🧑‍⚕️ **Deep Personalization:** Every AI response is tailored to your customized health profile (age, sex, weight, goals, diseases, and diet type).
-- ⚠️ **Allergy Alerts:** Automatic, immediate warnings if a scanned product contains your documented allergens.
-- ⚖️ **Smart Comparisons:** Side-by-side analysis of multiple products (up to 5) with AI-driven recommendations on the best choice for you.
-- 💬 **Contextual Chat:** Engage in continuous conversation with your AI nutritionist—memory spans your last 10 messages.
-- 🔒 **Secure Auth & Data:** Built with Supabase Authentication (Email/Password, Google, Apple) and Row-Level Security (RLS) to protect your health data.
+### ✨ Key Features
+
+- 📸 **AI Image Analysis:** Photograph nutrition labels or meals to get instant macronutrient breakdowns and ingredient insights.
+- 🧑‍⚕️ **Deep Personalization:** Every AI response is contextualized to your custom health profile (age, sex, weight, fitness goals, medical history, and diet type).
+- ⚠️ **Allergy Alerts:** Automatic, immediate warnings if a scanned product contains your documented allergens, keeping you safe.
+- ⚖️ **Smart Comparisons:** Side-by-side analysis of multiple products (up to 5) with AI-driven recommendations on the optimal choice for your specific needs.
+- 💬 **Contextual Chat:** Engage in a continuous, dynamic conversation with your AI nutritionist—with memory spanning your last 10 messages for a seamless experience.
+- 🔒 **Secure Auth & Data:** Built with robust Supabase Authentication (Email/Password, Google, Apple) and Row-Level Security (RLS) to ensure your health data remains strictly confidential.
 - ⚡ **Freemium Tier:** Free users get 20 requests per day. Premium users get up to 500 requests per day.
 
 ---
 
 ## 💻 Tech Stack
 
-### Frontend
-- **Framework:** [Flutter](https://flutter.dev/) (Dart)
-- **State Management:** [Riverpod](https://riverpod.dev/)
-- **Routing:** [GoRouter](https://pub.dev/packages/go_router)
-- **Network:** [Dio](https://pub.dev/packages/dio)
+The application is built using a modern, scalable, and highly performant architecture.
 
-### Backend
-- **Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Python)
-- **Database:** PostgreSQL (hosted on [Supabase](https://supabase.com/))
-- **AI Integration:** Google Gemini 1.5 Flash (via `google-genai`)
-- **Storage:** Supabase Storage (Public CDN for images)
+### Frontend (Mobile & Web)
+*   **Framework:** [Flutter](https://flutter.dev/) (Dart) - For building natively compiled applications for mobile, web, and desktop from a single codebase.
+*   **State Management:** [Riverpod](https://riverpod.dev/) - For robust and compile-safe state management.
+*   **Routing:** [GoRouter](https://pub.dev/packages/go_router) - Declarative routing for complex navigation flows.
+*   **Networking:** [Dio](https://pub.dev/packages/dio) - Powerful HTTP client for Dart.
+
+### Backend (API Service)
+*   **Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Python) - High-performance web framework for building APIs.
+*   **AI Integration:** Google Gemini 1.5 Flash (via `google-genai`) - For state-of-the-art vision and natural language processing.
+*   **Validation:** [Pydantic](https://docs.pydantic.dev/) - Data validation and settings management using Python type annotations.
+
+### Database & Infrastructure
+*   **Database:** PostgreSQL (hosted on [Supabase](https://supabase.com/)) - Relational database handling complex queries and user profiles.
+*   **Authentication:** Supabase Auth - Managing user identities and secure access.
+*   **Storage:** Supabase Storage - Public CDN for storing and serving user-uploaded food images.
+
+---
+
+## 📱 Screenshots
+
+> **Note:** Add your actual project screenshots to an `assets/images/` folder in your repository and update these paths.
+
+| Home Dashboard | AI Analysis Results | Product Comparison | Health Profile |
+| :---: | :---: | :---: | :---: |
+| <img src="https://raw.githubusercontent.com/vigneshgoud7/Nutriscan/main/frontend/assets/images/placeholder_home.png" onerror="this.src='https://via.placeholder.com/250x500.png?text=Home+Screen'" width="200" alt="Home Dashboard"/> | <img src="https://raw.githubusercontent.com/vigneshgoud7/Nutriscan/main/frontend/assets/images/placeholder_analysis.png" onerror="this.src='https://via.placeholder.com/250x500.png?text=Analysis+Screen'" width="200" alt="AI Analysis"/> | <img src="https://raw.githubusercontent.com/vigneshgoud7/Nutriscan/main/frontend/assets/images/placeholder_compare.png" onerror="this.src='https://via.placeholder.com/250x500.png?text=Compare+Screen'" width="200" alt="Compare Products"/> | <img src="https://raw.githubusercontent.com/vigneshgoud7/Nutriscan/main/frontend/assets/images/placeholder_profile.png" onerror="this.src='https://via.placeholder.com/250x500.png?text=Profile+Screen'" width="200" alt="User Profile"/> |
+
+*Experience a seamless, intuitive UI designed for effortless navigation and quick insights.*
+
+---
+
+## 🏗️ System Architecture
+
+NutriScan AI utilizes a decoupled client-server architecture. The Flutter frontend communicates securely with the FastAPI backend via RESTful APIs.
+
+```mermaid
+graph TD
+    %% Frontend
+    subgraph Client [Flutter App]
+        UI[User Interface]
+        State[Riverpod State]
+        AuthClient[Supabase Client]
+    end
+
+    %% Backend API
+    subgraph Backend [FastAPI Service]
+        API[API Router]
+        AuthMiddleware[JWT Auth Middleware]
+        GeminiService[Gemini AI Service]
+        DBClient[AsyncPG DB Client]
+    end
+
+    %% External Services
+    subgraph Cloud [External Cloud Services]
+        SupabaseDB[(Supabase PostgreSQL)]
+        SupabaseAuth[Supabase Auth]
+        SupabaseStorage[Supabase Storage]
+        GeminiAPI[Google Gemini 1.5 Flash]
+    end
+
+    %% Flow
+    UI <--> State
+    State <--> |REST HTTPS| API
+    AuthClient <--> |JWT Token| SupabaseAuth
+    API <--> AuthMiddleware
+    AuthMiddleware <--> DBClient
+    API <--> GeminiService
+    GeminiService <--> |gRPC / REST| GeminiAPI
+    DBClient <--> |SQL| SupabaseDB
+    API <--> SupabaseStorage
+```
+
+### Data Flow Example (Image Analysis):
+1. **Capture:** User captures a food image in the Flutter app.
+2. **Upload:** The image is uploaded directly to **Supabase Storage**.
+3. **Request:** The Flutter app sends the image URL and user prompt to the **FastAPI `/chat/message` endpoint**.
+4. **Auth & Context:** The backend verifies the user's JWT token and retrieves their **Health Profile** from PostgreSQL.
+5. **Prompt Engineering:** The backend constructs a highly detailed prompt combining the image, user query, and health profile context.
+6. **AI Processing:** The prompt is sent to **Google Gemini Vision AI**.
+7. **Response:** The AI response is processed, saved to the database (Chat History), and returned to the client.
 
 ---
 
@@ -158,12 +230,15 @@ nutriscan/
 
 ---
 
-## 🔮 Future Improvements
+## 🔮 Future Roadmap
 
-- **Barcode Scanning:** Direct integration with OpenFoodFacts API for instant product lookup without AI processing.
-- **Meal Logging:** Daily macro and calorie tracking integrated with a calendar view.
-- **Wearable Integration:** Sync health data (calories burned, steps) directly from Apple Health and Google Fit.
-- **Multi-language Support:** Expand the AI prompt guidelines to support localized nutrition recommendations in Spanish, French, and Hindi.
+We are constantly innovating. Here is what is coming next to NutriScan AI:
+
+- [ ] **Barcode Scanning:** Direct integration with OpenFoodFacts API for instant product lookup without AI processing, saving time and tokens.
+- [ ] **Meal Logging & Calendar:** Daily macro and calorie tracking integrated with a comprehensive calendar view for long-term diet management.
+- [ ] **Wearable Integration:** Sync health data (calories burned, active minutes, steps) directly from Apple Health and Google Fit for a holistic health view.
+- [ ] **Multi-language Support:** Expand the AI prompt guidelines to natively support localized nutrition recommendations in Spanish, French, German, and Hindi.
+- [ ] **Community Sharing:** A platform for users to share healthy AI-approved recipes and findings with the NutriScan community.
 
 ---
 
