@@ -84,6 +84,47 @@ def _history_to_text(history: List[ChatMessage]) -> str:
     return "\n".join(lines)
 
 
+async def _call_grok_fallback(parts: list) -> str:
+    """Fallback to xAI's Grok API if Gemini hits a rate limit."""
+    if not settings.GROK_API_KEY:
+        raise ValueError("No Grok API key configured for fallback")
+    
+    content_array = []
+    has_image = False
+    
+    for p in parts:
+        if isinstance(p, str):
+            content_array.append({"type": "text", "text": p})
+        elif isinstance(p, dict) and "data" in p:
+            mime = p.get("mime_type", "image/jpeg")
+            content_array.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime};base64,{p['data']}"}
+            })
+            has_image = True
+            
+    # Use vision model if images are present, otherwise standard text model
+    model = settings.GROK_MODEL if has_image else "grok-beta"
+    
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "user", "content": content_array}
+        ]
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {settings.GROK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.post("https://api.x.ai/v1/chat/completions", json=payload, headers=headers)
+        r.raise_for_status()
+        return r.json()["choices"][0]["message"]["content"]
+
+
+
 async def analyze_nutrition(
     user_question: str,
     image_url: Optional[str],
@@ -110,6 +151,15 @@ async def analyze_nutrition(
         response = _model.generate_content(parts)
         return response.text
     except Exception as e:
+        error_msg = str(e).lower()
+        if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
+            logger.warning("Gemini rate limit hit! Falling back to Grok API...")
+            try:
+                return await _call_grok_fallback(parts)
+            except Exception as grok_err:
+                logger.exception(f"Grok fallback failed: {grok_err}")
+                raise RuntimeError("AI service temporarily unavailable (both primary and fallback failed). Please try again.")
+                
         logger.exception("Gemini API error")
         if settings.ENV != "production":
             raise RuntimeError(f"AI service error: {e}")
@@ -143,14 +193,25 @@ async def compare_products(
     try:
         response = _model.generate_content(parts)
         text = response.text
-        winner = None
-        for name in names:
-            if name.lower() in text.lower():
-                winner = name
-                break
-        return text, winner
     except Exception as e:
-        logger.exception("Gemini compare error")
-        if settings.ENV != "production":
-            raise RuntimeError(f"AI service error: {e}")
-        raise RuntimeError("AI service temporarily unavailable. Please try again.")
+        error_msg = str(e).lower()
+        if "429" in error_msg or "quota" in error_msg or "resourceexhausted" in error_msg:
+            logger.warning("Gemini rate limit hit! Falling back to Grok API for comparison...")
+            try:
+                text = await _call_grok_fallback(parts)
+            except Exception as grok_err:
+                logger.exception(f"Grok fallback failed: {grok_err}")
+                raise RuntimeError("AI service temporarily unavailable (both primary and fallback failed). Please try again.")
+        else:
+            logger.exception("Gemini compare error")
+            if settings.ENV != "production":
+                raise RuntimeError(f"AI service error: {e}")
+            raise RuntimeError("AI service temporarily unavailable. Please try again.")
+
+    winner = None
+    for name in names:
+        if name.lower() in text.lower():
+            winner = name
+            break
+    return text, winner
+

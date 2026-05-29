@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
+    # Fallback (Grok API)
+    GROK_API_KEY: str | None = None
+    GROK_MODEL: str = "grok-vision-beta"
+
     # Database (direct Postgres connection)
     DATABASE_URL: str  # postgresql+asyncpg://user:pass@host:port/db
 
