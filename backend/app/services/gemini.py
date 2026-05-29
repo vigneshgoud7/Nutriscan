@@ -89,29 +89,17 @@ async def _call_grok_fallback(parts: list) -> str:
     if not settings.GROK_API_KEY:
         raise ValueError("No Grok API key configured for fallback")
     
-    content_array = []
-    has_image = False
+    # Groq recently decommissioned all their vision models. 
+    # We must strip images and only send text, otherwise it crashes.
+    text_parts = [p for p in parts if isinstance(p, str)]
+    final_content = "\n".join(text_parts)
     
-    for p in parts:
-        if isinstance(p, str):
-            content_array.append({"type": "text", "text": p})
-        elif isinstance(p, dict) and "data" in p:
-            mime = p.get("mime_type", "image/jpeg")
-            content_array.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:{mime};base64,{p['data']}"}
-            })
-            has_image = True
-            
+    has_image = any(isinstance(p, dict) and "data" in p for p in parts)
     if has_image:
-        model = "llama-3.2-11b-vision-preview"
-        final_content = content_array
-    else:
-        model = "llama-3.3-70b-versatile"
-        final_content = next((p for p in parts if isinstance(p, str)), "Hello")
+        final_content += "\n\n(Note: The user attached an image, but this backup AI model does not have eyes. Please try to answer their question based on the text alone, or ask them to type out the ingredients/nutrition facts.)"
         
     payload = {
-        "model": model,
+        "model": "llama-3.3-70b-versatile",
         "messages": [
             {"role": "user", "content": final_content}
         ]
