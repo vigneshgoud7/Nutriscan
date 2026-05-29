@@ -103,8 +103,8 @@ async def _call_grok_fallback(parts: list) -> str:
             })
             has_image = True
             
-    # Use vision model if images are present, otherwise standard text model
-    model = settings.GROK_MODEL if has_image else "grok-beta"
+    # Use Groq's vision model for both text and images
+    model = "llama-3.2-90b-vision-preview"
     
     payload = {
         "model": model,
@@ -119,7 +119,7 @@ async def _call_grok_fallback(parts: list) -> str:
     }
     
     async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.post("https://api.x.ai/v1/chat/completions", json=payload, headers=headers)
+        r = await client.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers)
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"]
 
